@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pistas Escondidas 3</title>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#f0ede8; --paper:#faf9f6; --ink:#1e1a14; --ink2:#3a3428;
+  --muted:#8a8070; --line:#ddd8cc;
+  --green:#2e7d5e; --green-l:#e8f5ee; --green-m:#8cc8aa;
+  --red:#8a2820; --red-l:#fdf0ee; --red-m:#d4948c;
+  --amber:#8a5a10; --amber-l:#fdf4e0; --amber-m:#d4a84c;
+  --blue:#1e4a7a; --blue-l:#e8f0fa; --blue-m:#7aaad4;
+  --indigo:#3a3a8c; --indigo-l:#eaeaf8; --indigo-m:#8a8ad0;
+}
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; font-size:15px; line-height:1.6; }
+.topbar { background:var(--ink); padding:12px 22px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; position:sticky; top:0; z-index:100; border-bottom:3px solid var(--indigo); }
+.top-title { font-size:17px; font-weight:700; color:#fff; }
+.top-sub { font-size:11px; color:rgba(255,255,255,.45); font-weight:500; }
+.score-pill { background:rgba(255,255,255,.1); border:1.5px solid rgba(255,255,255,.2); border-radius:20px; padding:5px 14px; font-size:13px; font-weight:700; color:var(--indigo-m); }
+.tab-row { display:flex; gap:4px; flex-wrap:wrap; padding:8px 22px 0; background:var(--ink); border-bottom:3px solid var(--indigo); overflow-x:auto; }
+.ttab { background:transparent; border:1.5px solid rgba(255,255,255,.18); color:rgba(255,255,255,.55); font-size:12px; font-weight:600; padding:6px 12px; border-radius:6px 6px 0 0; cursor:pointer; transition:all .15s; white-space:nowrap; margin-bottom:-3px; border-bottom-color:transparent; flex-shrink:0; }
+.ttab:hover { color:#fff; border-color:rgba(255,255,255,.4); }
+.ttab.active { background:var(--paper); border-color:var(--indigo); border-bottom-color:var(--paper); color:var(--indigo); }
+.screen { display:none; }
+.screen.active { display:block; animation:up .25s ease; }
+@keyframes up { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.main { max-width:760px; margin:0 auto; padding:28px 20px 80px; }
+.page-hdr { margin-bottom:24px; padding-bottom:18px; border-bottom:1.5px solid var(--line); }
+.eyebrow { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--indigo); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.eyebrow::after { content:''; flex:1; height:1px; background:var(--indigo-m); opacity:.4; }
+.page-title { font-size:26px; font-weight:800; color:var(--ink); line-height:1.2; margin-bottom:7px; }
+.page-desc { font-size:14px; color:var(--muted); line-height:1.65; max-width:540px; }
+.prog-wrap { margin-bottom:20px; }
+.prog-track { height:6px; background:var(--line); border-radius:6px; overflow:hidden; margin-bottom:5px; }
+.prog-fill { height:100%; background:var(--indigo); border-radius:6px; transition:width .5s ease; }
+.prog-label { font-size:11px; color:var(--muted); font-weight:600; }
+.chat-container { background:var(--paper); border:1.5px solid var(--line); border-radius:16px; overflow:hidden; margin-bottom:20px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+.chat-header { background:var(--indigo); padding:12px 16px; }
+.chat-context { font-size:12px; font-weight:700; color:rgba(255,255,255,.85); font-style:italic; }
+.chat-context strong { color:#fff; font-style:normal; }
+.chat-body { padding:16px 14px; display:flex; flex-direction:column; gap:10px; }
+.msg-wrap { display:flex; flex-direction:column; gap:3px; }
+.msg-wrap.right { align-items:flex-end; }
+.msg-name { font-size:11px; font-weight:700; color:var(--muted); padding:0 4px; }
+.msg { max-width:78%; padding:10px 14px; border-radius:16px; font-size:14px; font-weight:500; line-height:1.55; border:2px solid transparent; }
+.msg.left { background:#f0ece4; border-bottom-left-radius:4px; color:var(--ink2); }
+.msg.right { background:#e2e2f2; border-bottom-right-radius:4px; color:var(--ink); }
+.msg-obs { font-size:11.5px; font-style:italic; color:var(--muted); padding:0 4px; max-width:78%; }
+.msg-wrap.right .msg-obs { text-align:right; }
+.analysis { background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:18px; }
+.analysis-title { font-size:14px; font-weight:800; color:var(--ink); margin-bottom:12px; }
+.pergunta-box { background:var(--blue-l); border:1.5px solid var(--blue-m); border-radius:12px; padding:12px 15px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:var(--blue); line-height:1.55; }
+.opcoes { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
+.opcao { background:#fff; border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink2); transition:all .15s; display:flex; align-items:flex-start; gap:10px; text-align:left; font-family:inherit; line-height:1.5; }
+.opcao:hover:not(:disabled) { border-color:var(--indigo); background:var(--indigo-l); color:var(--indigo); }
+.opcao:disabled { cursor:default; }
+.opcao.correta { background:var(--green-l); border-color:var(--green); color:var(--green); }
+.opcao.errada { background:var(--red-l); border-color:var(--red); color:var(--red); }
+.opcao.revelada { background:var(--green-l); border-color:var(--green); color:var(--green); }
+.opc-ltr { width:24px; height:24px; border-radius:50%; background:var(--bg); border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--muted); flex-shrink:0; }
+.fb-inline { border-radius:10px; padding:11px 14px; margin-bottom:12px; font-size:13px; font-weight:600; line-height:1.6; display:none; }
+.fb-inline.show { display:block; animation:up .2s ease; }
+.fb-c { background:var(--green-l); border:1.5px solid var(--green-m); color:#1e5a3a; }
+.fb-w { background:var(--red-l); border:1.5px solid var(--red-m); color:#5a1e1e; }
+.nota { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:10px 13px; font-family:inherit; font-size:14px; color:var(--ink); background:var(--bg); resize:vertical; min-height:52px; outline:none; transition:border .15s; line-height:1.55; }
+.nota:focus { border-color:var(--indigo); background:#fff; }
+.nota::placeholder { color:#bbb; font-style:italic; }
+.nota-label { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:10px 0 5px; }
+.btn { font-family:inherit; font-size:14px; font-weight:700; padding:10px 22px; border-radius:10px; border:2px solid; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:7px; }
+.btn:hover { transform:translateY(-1px); }
+.btn-indigo { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+.btn-outline { background:transparent; border-color:var(--line); color:var(--muted); }
+.btn-outline:hover { border-color:var(--ink); color:var(--ink); }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.gabarito { background:var(--green-l); border:1.5px solid var(--green-m); border-radius:12px; padding:14px 16px; margin-top:12px; display:none; }
+.gabarito.show { display:block; animation:up .25s ease; }
+.gabarito-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--green); margin-bottom:8px; }
+.gabarito-body { font-size:13.5px; color:#1e5a3a; line-height:1.7; }
+.gabarito-body strong { color:var(--green); }
+.pistas-box { background:var(--amber-l); border:1.5px solid var(--amber-m); border-radius:12px; padding:12px 15px; margin-bottom:14px; }
+.pistas-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--amber); margin-bottom:8px; }
+.pista-tag { display:inline-block; background:#fff; border:1.5px solid var(--amber-m); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; color:var(--amber); margin:3px 3px 3px 0; cursor:pointer; transition:all .15s; }
+.pista-tag:hover { background:var(--amber-l); }
+.pista-tag.sel { background:var(--amber-m); color:#fff; }
+.inst-box { background:var(--indigo-l); border:1.5px solid var(--indigo-m); border-radius:12px; padding:13px 16px; margin-bottom:16px; font-size:13.5px; color:var(--indigo); font-weight:600; line-height:1.6; }
+.result-box { background:var(--paper); border:1.5px solid var(--line); border-radius:16px; padding:28px 24px; text-align:center; margin-bottom:20px; }
+.result-title { font-size:28px; font-weight:800; color:var(--ink); margin-bottom:6px; }
+.result-sub { font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.6; }
+.result-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+@media(max-width:480px){ .result-grid{grid-template-columns:1fr} }
+.result-stat { background:var(--bg); border:1.5px solid var(--line); border-radius:12px; padding:14px; }
+.result-num { font-size:30px; font-weight:800; color:var(--indigo); }
+.result-lbl { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+.timer { position:fixed; bottom:20px; right:20px; background:var(--ink); border:2px solid var(--indigo); border-radius:12px; padding:10px 14px; text-align:center; min-width:80px; z-index:200; }
+.timer-val { font-size:20px; font-weight:800; color:#fff; letter-spacing:.05em; }
+.timer-lbl { font-size:9px; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+.timer-btns { display:flex; gap:4px; margin-top:6px; }
+.tbtn { flex:1; padding:4px; border-radius:6px; border:none; font-size:10px; font-weight:700; cursor:pointer; }
+.tbtn-go { background:var(--indigo); color:#fff; }
+.tbtn-rst { background:rgba(255,255,255,.1); color:rgba(255,255,255,.6); }
+/* VIDEOS */
+.vid-card { background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:14px; }
+.vid-nome { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:2px; }
+.vid-meta { font-size:11.5px; font-weight:700; color:var(--indigo); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.vid-txt { font-size:13.5px; color:var(--ink2); line-height:1.65; margin-bottom:8px; }
+.vid-busca { background:var(--amber-l); border:1.5px solid var(--amber-m); border-radius:8px; padding:6px 12px; font-size:12.5px; font-weight:700; color:var(--amber); display:inline-block; margin-bottom:8px; }
+.vid-perg { background:var(--blue-l); border-left:3px solid var(--blue-m); border-radius:0 8px 8px 0; padding:9px 13px; font-size:13px; color:var(--blue); font-weight:600; line-height:1.6; }
+.vid-usado { font-size:11px; font-weight:700; color:var(--green); background:var(--green-l); border:1px solid var(--green-m); border-radius:12px; padding:2px 9px; display:inline-block; margin-left:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<div class="timer">
+  <div class="timer-lbl">Sessão</div>
+  <div class="timer-val" id="timerVal">00:00</div>
+  <div class="timer-btns">
+    <button class="tbtn tbtn-go" id="timerBtn" onclick="toggleTimer()">Iniciar</button>
+    <button class="tbtn tbtn-rst" onclick="resetTimer()">Zerar</button>
+  </div>
+</div>
+
+<nav class="topbar">
+  <div>
+    <div class="top-title">Pistas Escondidas 3</div>
+    <div class="top-sub">Histórias novas e lista de vídeos para investigar</div>
+  </div>
+  <div class="score-pill" id="scoreDisplay">0 pontos</div>
+</nav>
+<div class="tab-row">
+  <button class="ttab active" onclick="go('inicio')">Início</button>
+  <button class="ttab" onclick="go('c1')">História 1</button>
+  <button class="ttab" onclick="go('c2')">História 2</button>
+  <button class="ttab" onclick="go('c3')">História 3</button>
+  <button class="ttab" onclick="go('c4')">História 4</button>
+  <button class="ttab" onclick="go('c5')">História 5</button>
+  <button class="ttab" onclick="go('c6')">História 6</button>
+  <button class="ttab" onclick="go('c7')">História 7</button>
+  <button class="ttab" onclick="go('c8')">História 8</button>
+  <button class="ttab" onclick="go('videos')">Vídeos</button>
+  <button class="ttab" onclick="go('resultado')">Resultado</button>
+</div>
+
+<!-- INÍCIO -->
+<div class="screen active" id="s-inicio">
+  <div class="main">
+    <div class="page-hdr">
+      <div class="eyebrow">Parte 3</div>
+      <div class="page-title">Pistas Escondidas 3</div>
+      <div class="page-desc">Oito histórias novas, agora mais difíceis: em algumas a pista está no que a pessoa NÃO disse, em outras existe mais de uma leitura possível. E tem uma aba com vídeos para investigar emoções em cena.</div>
+    </div>
+    <div class="inst-box">Lembre das perguntas do detetive: o que a pessoa disse? O comportamento combina com as palavras? O que aconteceu antes? Existe outra explicação possível?</div>
+    <div class="btn-row"><button class="btn btn-indigo" onclick="go('c1')">Começar</button></div>
+  </div>
+</div>
+
+<!-- H1 -->
+<div class="screen" id="s-c1">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 1 de 8</div><div class="page-title">O grupo de estudos</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:12%"></div></div><div class="prog-label">História 1 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Tati montou um grupo de estudos e chamou quatro colegas. Ela mandou o convite no grupo da turma, onde a Nine também estava.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Tati</div><div class="msg left">Pessoal, chamei Bruno, Lia, Caio e Duda pro grupo de estudos de sábado! Vai ser na minha casa</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Nine</div><div class="msg right">👍</div><div class="msg-obs">Nine respondeu só com um joinha. Ela costuma escrever mensagens longas no grupo</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Tati</div><div class="msg left">Nine, você tá on? Some não hein!</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Nine</div><div class="msg right">Tô aqui sim. Bom estudo pra vocês.</div><div class="msg-obs">"Pra vocês", e não "pra gente"</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">Qual é a pista mais importante nessa conversa?</div>
+      <div class="opcoes" id="opcs1"></div>
+      <div class="fb-inline" id="fb1"></div>
+      <div class="pistas-box">
+        <div class="pistas-title">Quais pistas te ajudaram? Clique nelas</div>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Respondeu só com joinha</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Ela sempre escreve mensagens longas</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Disse "pra vocês" e não "pra gente"</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Não foi chamada e ninguém percebeu</span>
+      </div>
+      <div class="nota-label">O que Tati poderia dizer para consertar?</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c2')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>A pista mais fina:</strong> o "pra vocês" em vez de "pra gente". Essa única palavra mostra que a Nine já se colocou fora do grupo. Junto com o joinha seco de quem sempre escreve muito, forma um quadro claro de quem ficou de fora e está magoada.<br><br>
+        <strong>Resposta possível:</strong> "Nine, agora que reli minha mensagem percebi que não te chamei. Foi sem querer! Você quer vir sábado também?"
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H2 -->
+<div class="screen" id="s-c2">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 2 de 8</div><div class="page-title">O elogio estranho</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:25%"></div></div><div class="prog-label">História 2 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Pilar levou dois meses treinando para tocar uma música no sarau da escola. Ela tocou hoje e errou duas notas no meio.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Colega</div><div class="msg left">Pilar, que corajosa você, hein! Subir no palco assim na frente de todo mundo!</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Pilar</div><div class="msg right">Obrigada... mas você gostou da música?</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Colega</div><div class="msg left">Ah, coragem é o que importa! Sério, eu nunca teria coragem de fazer isso.</div><div class="msg-obs">Não respondeu sobre a música nas duas vezes</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">O que a colega está comunicando sem dizer diretamente?</div>
+      <div class="opcoes" id="opcs2"></div>
+      <div class="fb-inline" id="fb2"></div>
+      <div class="nota-label">A colega quis ser má? Explique o que você acha</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c3')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>A pista está no que ela NÃO disse:</strong> elogiar a coragem duas vezes e desviar da pergunta sobre a música mostra que ela não achou a apresentação boa, mas não quis dizer isso. Elogiar o esforço em vez do resultado costuma ser um jeito de evitar uma crítica.<br><br>
+        <strong>Ela quis ser má?</strong> Provavelmente não. Esse é um elogio de proteção, para não magoar. Nem toda pista escondida é maldade: às vezes é gentileza desajeitada.
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H3 -->
+<div class="screen" id="s-c3">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 3 de 8</div><div class="page-title">O pai que trabalha demais</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:37%"></div></div><div class="prog-label">História 3 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> O pai de Otávio cancelou o cinema de sábado por causa do trabalho. É a terceira vez seguida que isso acontece.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Pai</div><div class="msg left">Filho, sábado não vai dar de novo, apareceu uma reunião. Semana que vem a gente vai, prometo!</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Otávio</div><div class="msg right">Tranquilo, pai. Nem tava tão a fim.</div><div class="msg-obs">Otávio tinha mandado o trailer do filme para o pai três vezes na semana</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Pai</div><div class="msg left">Que bom que você entende! Você é demais, filho</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Otávio</div><div class="msg right">É.</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">Qual é a contradição mais forte nessa conversa?</div>
+      <div class="opcoes" id="opcs3"></div>
+      <div class="fb-inline" id="fb3"></div>
+      <div class="pistas-box">
+        <div class="pistas-title">Quais pistas te ajudaram? Clique nelas</div>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Mandou o trailer três vezes na semana</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">É a terceira vez que cancela</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Respondeu só "É."</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">O pai não percebeu nenhuma pista</span>
+      </div>
+      <div class="nota-label">O que Otávio poderia dizer se quisesse ser honesto sem brigar?</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c4')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>A contradição:</strong> quem manda o trailer três vezes na semana está MUITO a fim. O "nem tava tão a fim" é o oposto exato do comportamento dele. Quando as palavras contradizem o comportamento, o comportamento conta a verdade.<br><br>
+        <strong>Uma fala honesta e sem briga:</strong> "Pai, na verdade eu tava bem animado, mandei o trailer várias vezes. Fico triste quando cancela. Dá pra gente marcar um dia que você tenha certeza?"
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H4 -->
+<div class="screen" id="s-c4">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 4 de 8</div><div class="page-title">A amiga que sumiu</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:50%"></div></div><div class="prog-label">História 4 de 8</div></div>
+    <div class="inst-box">Atenção: esta história tem mais de uma leitura possível!</div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Iris e Pati eram inseparáveis. Nas últimas três semanas, Pati tem respondido devagar e recusado convites. Iris não sabe se fez algo errado.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap right"><div class="msg-name">Iris</div><div class="msg right">Pati, tá tudo bem entre a gente? Você tá meio sumida</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Pati</div><div class="msg left">Tá tudo bem sim! Só tô meio sem tempo</div><div class="msg-obs">Demorou 6 horas para responder</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Iris</div><div class="msg right">Ah tá. Se eu fiz alguma coisa, pode falar viu?</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Pati</div><div class="msg left">Não fez nada não, Iris. Sério. Depois a gente conversa</div><div class="msg-obs">"Depois a gente conversa" já foi dito duas vezes nas últimas semanas</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">O que pode estar acontecendo com Pati?</div>
+      <div class="opcoes" id="opcs4"></div>
+      <div class="fb-inline" id="fb4"></div>
+      <div class="nota-label">Por que aqui não dá para ter certeza? O que Iris pode fazer sem acusar ninguém?</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c5')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>Duas leituras válidas:</strong> Pati pode estar magoada com algo e não conseguir falar. Ou pode estar passando por algo pessoal dela que não tem nada a ver com a Iris. O "depois a gente conversa" repetido aponta que existe algo, mas não diz o quê.<br><br>
+        <strong>O que Iris pode fazer:</strong> não acusar nem insistir, e deixar a porta aberta: "Pati, respeito seu tempo. Só quero que saiba que quando você quiser conversar, sobre qualquer coisa, eu tô aqui." Detetive bom sabe a hora de esperar.
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H5 -->
+<div class="screen" id="s-c5">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 5 de 8</div><div class="page-title">O parabéns atrasado</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:62%"></div></div><div class="prog-label">História 5 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Lorena e Sarah disputaram a mesma vaga no time de vôlei. Sarah passou e Lorena não. Sarah postou a foto com o uniforme novo.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Sarah postou</div><div class="msg left">Foto com o uniforme do time. Legenda: "Consegui!!! 🏐"</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Lorena comentou</div><div class="msg right">Parabéns, você merece muito. Sério mesmo.</div><div class="msg-obs">Comentou 3 dias depois do post</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Sarah</div><div class="msg left">Obrigada, Lo 🥹 significa muito vindo de você</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Lorena</div><div class="msg right">Imagina. Bora treinar junto quando você puder?</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">Como entender o comentário de Lorena?</div>
+      <div class="opcoes" id="opcs5"></div>
+      <div class="fb-inline" id="fb5"></div>
+      <div class="nota-label">Dá para sentir duas coisas ao mesmo tempo? Explique com suas palavras</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c6')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>As duas coisas são verdade:</strong> os 3 dias de demora mostram que doeu. E o "sério mesmo" junto com o convite para treinar mostram que o carinho também é real. Lorena precisou de tempo para processar a própria tristeza antes de conseguir comemorar pela amiga.<br><br>
+        <strong>A lição mais importante:</strong> sentimentos não vêm um de cada vez. Dá para estar triste pela própria perda E feliz pela amiga ao mesmo tempo. Nem toda pista de tristeza significa falsidade.
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H6 -->
+<div class="screen" id="s-c6">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 6 de 8</div><div class="page-title">A pergunta que não era pergunta</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:75%"></div></div><div class="prog-label">História 6 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Bento está jogando videogame há quatro horas. O quarto dele está bagunçado desde ontem e a mãe já pediu duas vezes para arrumar.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Mãe</div><div class="msg left">Bento, você tá vendo essa bagunça aí no quarto?</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Bento</div><div class="msg right">Tô vendo sim, mãe.</div><div class="msg-obs">E continuou jogando</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Mãe</div><div class="msg left">Ah, tá vendo. Que bom.</div><div class="msg-obs">Saiu do quarto e fechou a porta com força</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">A mãe estava mesmo perguntando se ele via a bagunça?</div>
+      <div class="opcoes" id="opcs6"></div>
+      <div class="fb-inline" id="fb6"></div>
+      <div class="pistas-box">
+        <div class="pistas-title">Quais pistas te ajudaram? Clique nelas</div>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Ela já pediu duas vezes antes</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">O "que bom" seco no final</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Fechou a porta com força</span>
+        <span class="pista-tag" onclick="this.classList.toggle('sel')">Ninguém pergunta o óbvio sem motivo</span>
+      </div>
+      <div class="nota-label">Como Bento deveria ter respondido?</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c7')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>Era um pedido disfarçado de pergunta:</strong> ninguém pergunta se a pessoa está vendo algo óbvio sem ter uma intenção por trás. A mãe estava dizendo "arrume esse quarto agora". Bento respondeu ao pé da letra e ignorou o pedido real.<br><br>
+        <strong>Dica de detetive:</strong> quando alguém faz uma pergunta cuja resposta é óbvia, quase sempre não é uma pergunta. É um pedido, uma crítica ou um lembrete. Exemplos: "você viu que horas são?", "essa louça vai se lavar sozinha?"<br><br>
+        <strong>Resposta melhor:</strong> "Vi sim, mãe. Desculpa, deixa eu terminar essa partida e já arrumo, tá?"
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H7 -->
+<div class="screen" id="s-c7">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 7 de 8</div><div class="page-title">O convite morno</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:87%"></div></div><div class="prog-label">História 7 de 8</div></div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Kelly quer ir ao aniversário da prima da Bel. Ela ficou sabendo por outra pessoa e mandou mensagem para a Bel.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap right"><div class="msg-name">Kelly</div><div class="msg right">Soube do aniversário da sua prima! Vai ser legal né?</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Bel</div><div class="msg left">Vai sim</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Kelly</div><div class="msg right">Nossa, adoraria conhecer ela!</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Bel</div><div class="msg left">Ah... se você quiser ir, pode ir né. Acho que tem espaço.</div><div class="msg-obs">"Se você quiser", "acho que tem espaço"</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">Bel convidou a Kelly de verdade?</div>
+      <div class="opcoes" id="opcs7"></div>
+      <div class="fb-inline" id="fb7"></div>
+      <div class="nota-label">Qual seria a diferença entre esse convite e um convite de verdade? Escreva os dois</div>
+      <textarea class="nota" placeholder="Convite morno: ... / Convite de verdade: ..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('c8')">Próxima história</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>Não foi um convite de verdade:</strong> foi uma permissão morna. As pistas estão nas palavras exatas: "se você quiser", "pode ir né", "acho que tem espaço". Tudo hesitante, nada entusiasmado, e o convite só apareceu depois de a Kelly praticamente pedir.<br><br>
+        <strong>Convite de verdade soa assim:</strong> "Vem sim! Vai ser demais, eu ia te chamar!" Entusiasmo, iniciativa e certeza.<br><br>
+        <strong>O que Kelly pode fazer:</strong> reconhecer a pista e não se impor: "Ah, se for um evento mais da família, deixa pra próxima! A gente se vê outro dia."
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- H8 -->
+<div class="screen" id="s-c8">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">História 8 de 8</div><div class="page-title">A ajuda recusada</div></div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:100%"></div></div><div class="prog-label">Última história!</div></div>
+    <div class="inst-box">Atenção: aqui a pista aponta para algo diferente de mágoa!</div>
+    <div class="chat-container">
+      <div class="chat-header"><div class="chat-context"><strong>Contexto:</strong> Jade sempre foi a melhor da turma em matemática. Ela tirou nota baixa na última prova e a professora sugeriu reforço.</div></div>
+      <div class="chat-body">
+        <div class="msg-wrap left"><div class="msg-name">Amiga</div><div class="msg left">Jade, quer estudar comigo pra recuperação? Eu posso te explicar!</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Jade</div><div class="msg right">Não precisa, eu dou conta. Foi só um dia ruim.</div></div>
+        <div class="msg-wrap left"><div class="msg-name">Amiga</div><div class="msg left">Tem certeza? Eu não me importo mesmo!</div></div>
+        <div class="msg-wrap right"><div class="msg-name">Jade</div><div class="msg right">Eu não preciso de ajuda. Obrigada.</div><div class="msg-obs">Duas semanas depois, Jade ainda não tinha estudado e evitava falar do assunto</div></div>
+      </div>
+    </div>
+    <div class="analysis">
+      <div class="analysis-title">Análise</div>
+      <div class="pergunta-box">O que está por trás da recusa de Jade?</div>
+      <div class="opcoes" id="opcs8"></div>
+      <div class="fb-inline" id="fb8"></div>
+      <div class="nota-label">Como a amiga poderia ajudar sem a Jade se sentir mal?</div>
+      <textarea class="nota" placeholder="Escreva aqui..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="toggleGab(this)">Ver gabarito</button><button class="btn btn-indigo" onclick="go('videos')">Ver os vídeos</button></div>
+      <div class="gabarito"><div class="gabarito-title">Gabarito</div><div class="gabarito-body">
+        <strong>Não é mágoa, é vergonha:</strong> Jade sempre foi a melhor em matemática, e aceitar ajuda seria admitir que não está mais dando conta. Ela não está brava com a amiga, está constrangida com a situação. A prova é o que veio depois: continuou sem estudar e evitando o assunto.<br><br>
+        <strong>Detetive avançado:</strong> as pistas não apontam só para mágoa! Podem apontar para vergonha, medo, cansaço ou insegurança. A pergunta certa é sempre "o que essa pessoa está sentindo?", e não "ela está brava comigo?".<br><br>
+        <strong>Como ajudar:</strong> tirar o peso de "receber ajuda": "Jade, vamos estudar juntas? Eu preciso revisar também, me ajuda a não enrolar."
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- VÍDEOS -->
+<div class="screen" id="s-videos">
+  <div class="main">
+    <div class="page-hdr">
+      <div class="eyebrow">Material extra</div>
+      <div class="page-title">Vídeos para investigar</div>
+      <div class="page-desc">Curtas de animação em que quase não existe fala. A emoção precisa ser lida no rosto, no corpo e no contexto. Busque pelo termo indicado no YouTube.</div>
+    </div>
+    <div class="inst-box">Como usar: pause em momentos-chave e pergunte "o que ele está sentindo agora? qual pista mostrou isso? o que vai acontecer?". No final, escolha uma cena e faça a dublagem: assistir sem som e inventar as falas com o tom certo.</div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Kitbull</div>
+      <div class="vid-meta">Cerca de 9 min  ·  Medo, confiança e vínculo (Pixar)</div>
+      <div class="vid-busca">Buscar: "Kitbull Pixar curta"</div>
+      <div class="vid-txt">Uma gatinha de rua desconfiada e um pitbull maltratado viram vizinhos. Ela foge de qualquer aproximação, até perceber quem ele realmente é.</div>
+      <div class="vid-perg">"Por que a gatinha fugia dele? Ela estava errada em desconfiar? O que mudou a leitura dela sobre o cachorro?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">O Vendedor de Fumaça</div>
+      <div class="vid-meta">Cerca de 6 min  ·  Promessas boas demais e aparências</div>
+      <div class="vid-busca">Buscar: "El Vendedor de Humo curta" ou "O Vendedor de Fumaça curta"</div>
+      <div class="vid-txt">Um mágico chega a um vilarejo oferecendo realizar o desejo de todos. As pessoas se encantam, mas nem tudo é o que parece.</div>
+      <div class="vid-perg">"Quais pistas mostravam que algo estava errado antes do final? Por que ninguém percebeu? Você já viu alguém prometer demais?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Cuerdas (Cordas)</div>
+      <div class="vid-meta">Cerca de 10 min  ·  Amizade e inclusão (vencedor do Goya)</div>
+      <div class="vid-busca">Buscar: "Cuerdas curta legendado"</div>
+      <div class="vid-txt">Uma menina de orfanato faz amizade com um colega novo que usa cadeira de rodas e não fala. Ela inventa jeitos de brincar junto com ele.</div>
+      <div class="vid-perg">"Como ela descobria o que ele sentia, se ele não falava? Que pistas ela usava? Os outros colegas viam as mesmas pistas?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Alike</div>
+      <div class="vid-meta">Cerca de 8 min  ·  Rotina, criatividade e o que apaga a alegria</div>
+      <div class="vid-busca">Buscar: "Alike curta animação"</div>
+      <div class="vid-txt">Um pai leva o filho à escola todos os dias na mesma correria. Aos poucos, a cor vai sumindo dos dois. Sem falas compreensíveis, só sons e imagem.</div>
+      <div class="vid-perg">"O que a cor significa nessa história? Em que momento ela some de cada um? O que faz a cor voltar?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Mouse for Sale</div>
+      <div class="vid-meta">Cerca de 5 min  ·  Ser diferente e querer ser escolhido</div>
+      <div class="vid-busca">Buscar: "Mouse for Sale curta"</div>
+      <div class="vid-txt">Um ratinho de pet shop com orelhas enormes é ignorado por todos os clientes, e tenta de tudo para ser notado.</div>
+      <div class="vid-perg">"O que ele sente cada vez que alguém escolhe outro? Como dá para ver isso? O que ele faz para esconder a tristeza?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Umbrella</div>
+      <div class="vid-meta">Cerca de 8 min  ·  Empatia (animação brasileira premiada)</div>
+      <div class="vid-busca">Buscar: "Umbrella curta brasileiro animação"</div>
+      <div class="vid-txt">Um menino de orfanato tem um guarda-chuva vermelho que é seu tesouro. Um curta brasileiro sensível, sem nenhuma fala.</div>
+      <div class="vid-perg">"O que o guarda-chuva representa para ele? Como o filme mostra o que ele sente sem ninguém falar nada?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Pequeno Ícaro</div>
+      <div class="vid-meta">Cerca de 6 min  ·  Frustração e raiva</div>
+      <div class="vid-busca">Buscar: "Pequeno Ícaro curta animação"</div>
+      <div class="vid-txt">Um menino apaixonado por aviões tenta fazer o seu voar. Quando não dá certo, a frustração toma conta dele.</div>
+      <div class="vid-perg">"Como dá para ver a raiva crescendo nele? Quais sinais no corpo aparecem antes da explosão? Você reconhece esses sinais em você?"</div>
+    </div>
+
+    <div class="vid-card">
+      <div class="vid-nome">Caminho dos Gigantes</div>
+      <div class="vid-meta">Cerca de 12 min  ·  Medo, escolha e despedida (animação brasileira)</div>
+      <div class="vid-busca">Buscar: "Caminho dos Gigantes curta"</div>
+      <div class="vid-txt">Uma menina de um povo que vive entre árvores gigantes precisa fazer uma escolha difícil sobre o próprio caminho.</div>
+      <div class="vid-perg">"O que ela sentia antes de decidir? O medo dela era de quê?" Use só se você avaliar que o tema combina com o momento dela.</div>
+    </div>
+
+    <div class="btn-row"><button class="btn btn-indigo" onclick="go('resultado')">Ver resultado</button></div>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div class="screen" id="s-resultado">
+  <div class="main">
+    <div class="page-hdr"><div class="eyebrow">Resultado final</div><div class="page-title">Você terminou!</div></div>
+    <div class="result-box">
+      <div class="result-title">Detetive nível 3!</div>
+      <div class="result-sub">Você descobriu as pistas mais difíceis de todas: as que estão no que a pessoa NÃO disse, e aprendeu que nem toda pista aponta para mágoa.</div>
+      <div class="result-grid">
+        <div class="result-stat"><div class="result-num">8</div><div class="result-lbl">Histórias analisadas</div></div>
+        <div class="result-stat"><div class="result-num" id="pontosFinais">0</div><div class="result-lbl">Pontos conquistados</div></div>
+      </div>
+    </div>
+    <div style="background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:12px">As pistas avançadas que você aprendeu</div>
+      <div style="font-size:13.5px;color:var(--ink2);line-height:1.9">
+        Trocar "pra gente" por "pra vocês": quem já se colocou de fora<br>
+        Elogiar o esforço para não falar do resultado<br>
+        Palavras que contradizem o comportamento da semana toda<br>
+        Perguntas com resposta óbvia quase nunca são perguntas<br>
+        Convite morno: "se você quiser", "acho que tem espaço"<br>
+        Recusar ajuda pode ser vergonha, não mágoa<br>
+        Dá para sentir duas coisas opostas ao mesmo tempo<br>
+        Às vezes a resposta certa é esperar, não investigar
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-indigo" onclick="go('inicio')">Jogar novamente</button></div>
+  </div>
+</div>
+
+<script>
+const TABS=['inicio','c1','c2','c3','c4','c5','c6','c7','c8','videos','resultado'];
+function go(id){
+  TABS.forEach(t=>document.getElementById('s-'+t).classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  document.querySelectorAll('.ttab').forEach((b,i)=>b.classList.toggle('active',TABS[i]===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(id==='resultado') document.getElementById('pontosFinais').textContent=score;
+}
+let score=0;
+function addScore(n){ score+=n; document.getElementById('scoreDisplay').textContent=score+' pontos'; }
+
+const QUIZ={
+  1:{ops:["O joinha sozinho, que já mostra tudo","O 'pra vocês' em vez de 'pra gente', que mostra que ela se colocou de fora","Ela estar ocupada e sem tempo de escrever"],c:1,
+     fbc:"Essa é a pista mais fina de todas: uma palavra só. Quem diz 'bom estudo pra vocês' já não se inclui no grupo.",
+     fbw:"Olhe a última mensagem com lupa: ela disse 'pra vocês', não 'pra gente'. Essa única palavra mostra que ela já se colocou fora do grupo."},
+  2:{ops:["Que achou a apresentação incrível","Que não gostou da música mas não quer dizer isso","Que tem medo de palco e admira a Pilar"],c:1,
+     fbc:"Elogiar só a coragem e desviar duas vezes da pergunta sobre a música é o jeito educado de não dar uma resposta ruim.",
+     fbw:"Repare no que ela NÃO disse: a Pilar perguntou duas vezes sobre a música e ela só falou de coragem. Esse desvio é a pista."},
+  3:{ops:["O pai prometer e não cumprir","Otávio dizer que não estava a fim depois de mandar o trailer três vezes","A reunião ter aparecido em cima da hora"],c:1,
+     fbc:"Quem manda o trailer três vezes está muito a fim! As palavras dele contradizem o comportamento da semana inteira.",
+     fbw:"A contradição está dentro do próprio Otávio: ele mandou o trailer três vezes na semana e depois disse que 'nem tava tão a fim'. O comportamento entrega a verdade."},
+  4:{ops:["Com certeza Pati está magoada com a Iris","Com certeza é algo pessoal da Pati","Pode ser mágoa ou algo pessoal dela, as pistas não dizem qual"],c:2,
+     fbc:"Exatamente! O 'depois a gente conversa' repetido mostra que existe algo, mas não diz o quê. Boa detetive sabe quando não dá para concluir.",
+     fbw:"Cuidado com a certeza! O afastamento mostra que algo acontece, mas não revela se é sobre a Iris ou sobre a vida da Pati. Aqui a resposta honesta é 'não dá para saber ainda'."},
+  5:{ops:["O parabéns foi falso, ela só fingiu","Ela ficou triste pela própria perda E feliz pela amiga, as duas coisas juntas","Ela esqueceu do post e lembrou depois"],c:1,
+     fbc:"Os 3 dias mostram que doeu, e o convite para treinar mostra que o carinho é real. Sentimentos opostos podem existir ao mesmo tempo.",
+     fbw:"Não precisa escolher só um sentimento! A demora mostra a tristeza da própria perda, e o convite para treinar mostra afeto verdadeiro. As duas coisas convivem."},
+  6:{ops:["Sim, ela só queria saber se ele tinha visto","Não, era um pedido para arrumar disfarçado de pergunta","Sim, ela estava curiosa sobre a opinião dele"],c:1,
+     fbc:"Ninguém pergunta o óbvio sem intenção. Era 'arrume esse quarto'. O 'que bom' seco e a porta batendo confirmam.",
+     fbw:"Pense: ela já pediu duas vezes e a bagunça é visível. Perguntas cuja resposta é óbvia quase nunca são perguntas de verdade, são pedidos ou críticas."},
+  7:{ops:["Sim, ela convidou de coração","Não, foi uma permissão morna, não um convite","Sim, ela só é uma pessoa tímida"],c:1,
+     fbc:"'Se você quiser', 'pode ir né', 'acho que tem espaço': tudo hesitante, e só depois da Kelly quase pedir. Convite de verdade tem entusiasmo e iniciativa.",
+     fbw:"Olhe as palavras exatas: 'se você quiser', 'acho que tem espaço'. Convite de verdade soa assim: 'Vem sim! Eu ia te chamar!'"},
+  8:{ops:["Ela está magoada com a amiga","Ela está com vergonha de precisar de ajuda","Ela realmente dá conta sozinha"],c:1,
+     fbc:"Quem sempre foi a melhor sente vergonha de admitir dificuldade. A prova é o que veio depois: continuou sem estudar e evitando o assunto.",
+     fbw:"Nem toda pista aponta para mágoa! Aqui é vergonha: ela sempre foi a melhor em matemática e aceitar ajuda seria admitir que não está dando conta. E o comportamento das duas semanas seguintes confirma."},
+};
+function buildQuizzes(){
+  Object.keys(QUIZ).forEach(k=>{
+    const q=QUIZ[k];
+    const c=document.getElementById('opcs'+k);
+    if(!c)return;
+    const sh=q.ops.map((o,j)=>({text:o,orig:j})).sort(()=>Math.random()-.5);
+    const nc=sh.findIndex(o=>o.orig===q.c);
+    c.innerHTML=sh.map((o,j)=>`<button class="opcao" onclick="answerQ(${k},${j},${nc})"><span class="opc-ltr">${['A','B','C'][j]}</span>${o.text}</button>`).join('');
+  });
+}
+function answerQ(k,chosen,correct){
+  const q=QUIZ[k];
+  const btns=document.querySelectorAll('#opcs'+k+' .opcao');
+  btns.forEach(b=>b.disabled=true);
+  const fb=document.getElementById('fb'+k);
+  if(chosen===correct){
+    btns[chosen].classList.add('correta');
+    fb.className='fb-inline show fb-c';
+    fb.textContent='Isso mesmo! '+q.fbc;
+    addScore(10);
+  } else {
+    btns[chosen].classList.add('errada');
+    btns[correct].classList.add('revelada');
+    fb.className='fb-inline show fb-w';
+    fb.textContent='Quase! '+q.fbw;
+  }
+}
+function toggleGab(btn){
+  const gab=btn.parentElement.nextElementSibling;
+  const show=gab.classList.contains('show');
+  gab.classList.toggle('show');
+  btn.textContent=show?'Ver gabarito':'Fechar gabarito';
+}
+let secs=0,running=false,interval=null;
+function pad(n){return String(n).padStart(2,'0')}
+function updateT(){document.getElementById('timerVal').textContent=pad(Math.floor(secs/60))+':'+pad(secs%60)}
+function toggleTimer(){
+  const b=document.getElementById('timerBtn');
+  if(running){clearInterval(interval);running=false;b.textContent='Iniciar';}
+  else{running=true;b.textContent='Pausar';interval=setInterval(()=>{secs++;updateT();},1000);}
+}
+function resetTimer(){clearInterval(interval);running=false;secs=0;updateT();document.getElementById('timerBtn').textContent='Iniciar';}
+buildQuizzes();
+</script>
+</body>
+</html>
